@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: app
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app -d app"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Formato
+        run: test -z "$(gofmt -l cmd internal)"
+      - name: Tests
+        env:
+          DATABASE_URL: postgres://app:app@localhost:5432/app?sslmode=disable
+        run: go test ./...
+      - name: Race detector
+        env:
+          DATABASE_URL: postgres://app:app@localhost:5432/app?sslmode=disable
+        run: go test -race ./...
+      - name: Vet
+        run: go vet ./...

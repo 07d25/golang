@@ -1,0 +1,105 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/joho/godotenv"
+	"noniserver/m/v2/internal/auth"
+	"noniserver/m/v2/internal/chat"
+	"noniserver/m/v2/internal/community"
+	"noniserver/m/v2/internal/database"
+	"noniserver/m/v2/internal/ratelimit"
+)
+
+type response struct {
+	Status int `json:"status"`
+	Data   any `json:"data,omitempty"`
+}
+
+func main() {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	if err := godotenv.Load(); err != nil && !errors.Is(err, os.ErrNotExist) {
+		log.Printf("cargar .env: %v", err)
+	}
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		log.Fatal("DATABASE_URL no está configurada; copia .env.example como .env")
+	}
+	db, err := database.Open(ctx, dsn)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+	if err = database.Migrate(ctx, db); err != nil {
+		log.Fatal(err)
+	}
+
+	store := community.NewStore(db)
+	hub := chat.NewHub(store.SaveEvent, store.AuthorizeSocket)
+	authService := auth.New(env("AUTH_SECRET", "development-only-change-me"))
+	router := chi.NewRouter()
+	router.Use(ratelimit.New(120, time.Minute).Middleware)
+	router.Use(authService.Middleware)
+	router.Post("/auth/login", func(w http.ResponseWriter, r *http.Request) {
+		var request struct {
+			Username string `json:"username"`
+			Password string `json:"password"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			http.Error(w, "JSON inválido", http.StatusBadRequest)
+			return
+		}
+		userID, err := store.Authenticate(r.Context(), request.Username, request.Password)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+		token, err := authService.Token(userID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		write(w, http.StatusOK, map[string]string{"token": token})
+	})
+	router.Get("/health", func(w http.ResponseWriter, _ *http.Request) {
+		write(w, http.StatusOK, map[string]string{"status": "ok"})
+	})
+	router.Mount("/", community.Routes(store, authService.Require))
+	router.Handle("/ws/rooms/{roomID}", authService.Require(hub))
+
+	server := &http.Server{Addr: env("PORT", ":3000"), Handler: router, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 60 * time.Second}
+	go func() {
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Printf("servidor: %v", err)
+		}
+	}()
+	log.Printf("API escuchando en %s", server.Addr)
+	<-ctx.Done()
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Printf("cerrar API: %v", err)
+	}
+}
+
+func env(key, fallback string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return fallback
+}
+func write(w http.ResponseWriter, status int, data any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(response{Status: status, Data: data})
+}
