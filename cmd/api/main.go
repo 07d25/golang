@@ -15,6 +15,7 @@ import (
 	"github.com/joho/godotenv"
 	"noniserver/m/v2/internal/auth"
 	"noniserver/m/v2/internal/chat"
+	"noniserver/m/v2/internal/coach"
 	"noniserver/m/v2/internal/community"
 	"noniserver/m/v2/internal/database"
 	"noniserver/m/v2/internal/ratelimit"
@@ -46,6 +47,7 @@ func main() {
 
 	store := community.NewStore(db)
 	hub := chat.NewHub(store.SaveEvent, store.AuthorizeSocket)
+	coachService := coach.NewRulesCoach()
 	authService := auth.New(env("AUTH_SECRET", "development-only-change-me"))
 	router := chi.NewRouter()
 	router.Use(ratelimit.New(120, time.Minute).Middleware)
@@ -85,6 +87,41 @@ func main() {
 	router.Get("/ui/lesson", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		_, _ = w.Write([]byte(`<p><strong>HTMX</strong> pidió este fragmento al servidor y lo insertó sin recargar la página. El navegador conserva la pantalla y solo cambia esta pieza.</p>`))
+	})
+	router.Group(func(protected chi.Router) {
+		protected.Use(authService.Require)
+		protected.Post("/api/coach/next", func(w http.ResponseWriter, r *http.Request) {
+			var request struct {
+				Goal     coach.Goal     `json:"goal"`
+				Progress coach.Progress `json:"progress"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+				http.Error(w, "JSON inválido", http.StatusBadRequest)
+				return
+			}
+			mission, err := coachService.NextMission(r.Context(), request.Goal, request.Progress)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			write(w, http.StatusOK, mission)
+		})
+		protected.Post("/api/check-ins", func(w http.ResponseWriter, r *http.Request) {
+			var request struct {
+				Goal    coach.Goal `json:"goal"`
+				Content string     `json:"content"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+				http.Error(w, "JSON inválido", http.StatusBadRequest)
+				return
+			}
+			feedback, err := coachService.ReviewCheckIn(r.Context(), request.Goal, request.Content)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			write(w, http.StatusOK, feedback)
+		})
 	})
 	router.Mount("/", community.Routes(store, authService.Require))
 	router.Handle("/ws/rooms/{roomID}", authService.Require(hub))

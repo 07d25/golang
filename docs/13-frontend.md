@@ -41,6 +41,29 @@ curada.
 La misión y el check-in son estado local de Alpine en esta etapa didáctica.
 Los posts, likes y comentarios ya viajan a la API y PostgreSQL.
 
+## El primer agente: reglas antes que magia
+
+El frontend pide la siguiente misión a:
+
+```http
+POST /api/coach/next
+```
+
+Enviamos el objetivo y la semana actual. La implementación inicial usa
+`RulesCoach`: devuelve una misión predefinida, es barata y se puede probar.
+La interfaz `Coach` permite reemplazarla por un agente de IA más adelante sin
+cambiar el dashboard.
+
+El check-in se revisa en:
+
+```http
+POST /api/check-ins
+```
+
+El agente no hace el proyecto por la persona. Devuelve una siguiente acción
+pequeña y concreta. Esa es la diferencia entre un asistente útil y una caja de
+chat que responde cualquier cosa.
+
 No estamos creando una SPA. La pantalla sigue siendo HTML servido por Go y
 solo usamos JavaScript donde aporta una interacción concreta.
 
