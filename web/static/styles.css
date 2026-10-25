@@ -20,5 +20,10 @@ body { background-color: #0a0d12; }
 .nav-item:hover, .nav-item.active { background: rgba(190,242,100,.1); color: #d9f99d; }
 .room-card { border: 1px solid rgba(255,255,255,.1); border-radius: 14px; background: rgba(15,20,28,.86); padding: 20px; transition: border-color .15s, transform .15s; }
 .room-card:hover { border-color: rgba(190,242,100,.6); transform: translateY(-2px); }
+.badge { display: inline-flex; border: 1px solid rgba(190,242,100,.35); border-radius: 999px; background: rgba(190,242,100,.1); padding: 5px 10px; color: #d9f99d; font-family: 'DM Mono', monospace; font-size: .7rem; text-transform: uppercase; }
+.tag { border-radius: 6px; background: rgba(255,255,255,.07); padding: 5px 9px; color: #cbd5e1; font-family: 'DM Mono', monospace; font-size: .7rem; }
+.stat-card { border: 1px solid rgba(255,255,255,.1); border-radius: 14px; background: rgba(15,20,28,.7); padding: 17px; }
+.stat-card span, .stat-card small { display: block; color: #94a3b8; font-size: .78rem; }
+.stat-card b { display: block; margin: 8px 0 3px; color: #d9f99d; font-size: 1.45rem; }
 [x-cloak] { display: none !important; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; } }

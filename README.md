@@ -3,8 +3,8 @@
 Proyecto educativo para aprender Go construyendo una red social mínima con chat en tiempo real.
 
 La rama `02-gamer-chat-api` contiene el backend. La rama
-`03-gamer-chat-frontend` añade el frontend educativo con HTMX, Alpine.js y
-Tailwind CSS.
+`03-gamer-chat-frontend` lo convierte en **DevSquads**: sprints de cuatro
+semanas para juniors tech, con misiones, check-ins, squads y oportunidades.
 
 Incluye usuarios, publicaciones, follows, likes, comentarios, salas, mensajes, PostgreSQL y WebSocket con `github.com/coder/websocket`.
 

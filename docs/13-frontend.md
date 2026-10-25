@@ -1,9 +1,10 @@
-# 13. Frontend: HTMX, Alpine.js y Tailwind
+# 13. Frontend: DevSquads con HTMX, Alpine.js y Tailwind
 
 ## La misión
 
-Hasta aquí usábamos `curl` para hablar con la API. Ahora construiremos una
-interfaz real sin esconder la arquitectura detrás de un framework enorme.
+Hasta aquí usábamos `curl` para hablar con la API. Ahora convertimos la
+comunidad en DevSquads: un sprint de cuatro semanas para que juniors tech
+terminen un proyecto, compartan avances y se acerquen a una oportunidad real.
 
 ```text
 navegador → HTML + Alpine → fetch/HTMX → API Go → PostgreSQL
@@ -19,18 +20,40 @@ navegador → HTML + Alpine → fetch/HTMX → API Go → PostgreSQL
   pantalla.
 - **WebSocket** mantiene una conexión abierta para recibir mensajes al instante.
 
+## El producto en una frase
+
+> Construí algo que puedas mostrar, acompañado por un squad.
+
+El producto no es el chat. El chat es una herramienta. El valor está en la
+misión semanal, la racha, el check-in, el proyecto terminado y la oportunidad
+curada.
+
+## Recorrido del MVP
+
+1. La persona entra y elige un objetivo; en esta primera versión usamos
+   `Backend con Go`.
+2. El dashboard muestra la misión de la semana, XP, racha y progreso.
+3. El usuario hace un check-in de 30 minutos.
+4. Comparte un avance en el squad y recibe ánimo con likes/comentarios.
+5. Revisa oportunidades curadas que enlazan a la fuente original.
+6. Termina con un demo day y un proyecto para su portfolio.
+
+La misión y el check-in son estado local de Alpine en esta etapa didáctica.
+Los posts, likes y comentarios ya viajan a la API y PostgreSQL.
+
 No estamos creando una SPA. La pantalla sigue siendo HTML servido por Go y
 solo usamos JavaScript donde aporta una interacción concreta.
 
-## Primer recorrido
+## Primer recorrido técnico
 
 1. Abre `/register` y crea una cuenta.
 2. El formulario llama a `POST /users` y luego a `POST /auth/login`.
 3. Go devuelve el JWT y lo guarda en una cookie `HttpOnly`; el navegador la
    envía también al WebSocket.
-4. `/app` carga publicaciones y salas con `fetch`.
-5. Al publicar, Alpine envía JSON y vuelve a consultar el feed.
-6. En una sala, el navegador abre `/ws/rooms/{id}` y escucha eventos.
+4. `/app` carga publicaciones con `fetch`.
+5. Al publicar, Alpine envía JSON y actualiza el squad.
+6. Las oportunidades son datos curados del MVP; el botón lleva a la fuente.
+7. En una sala, el navegador abre `/ws/rooms/{id}` y escucha eventos.
 
 ## HTMX en acción
 
@@ -57,6 +80,12 @@ construir manualmente un `div`, buscarlo y asignarle `innerHTML`.
 
 `x-model` conecta el campo con el estado y `@submit.prevent` evita la recarga
 tradicional. La función `createPost` vive en `web/static/app.js`.
+
+## Qué todavía no está conectado a PostgreSQL
+
+Para mantener el primer producto pequeño, estas piezas son una maqueta
+interactiva: XP, racha, misión, check-in y oportunidades. El siguiente reto
+es crear las tablas `study_sprints`, `check_ins` y `challenges`.
 
 ## Reto
 
