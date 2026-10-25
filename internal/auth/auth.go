@@ -46,6 +46,11 @@ func (s *Service) UserID(token string) (int64, error) {
 func (s *Service) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		header := strings.TrimSpace(r.Header.Get("Authorization"))
+		if header == "" {
+			if cookie, err := r.Cookie("checkpoint_token"); err == nil {
+				header = "Bearer " + cookie.Value
+			}
+		}
 		if strings.HasPrefix(header, "Bearer ") {
 			id, err := s.UserID(strings.TrimSpace(strings.TrimPrefix(header, "Bearer ")))
 			if err == nil {

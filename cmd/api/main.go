@@ -69,10 +69,22 @@ func main() {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		http.SetCookie(w, &http.Cookie{Name: "checkpoint_token", Value: token, HttpOnly: true, SameSite: http.SameSiteLaxMode, Path: "/", MaxAge: 86400})
 		write(w, http.StatusOK, map[string]string{"token": token})
 	})
 	router.Get("/health", func(w http.ResponseWriter, _ *http.Request) {
 		write(w, http.StatusOK, map[string]string{"status": "ok"})
+	})
+	frontend := http.FileServer(http.Dir("web"))
+	router.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
+	router.Get("/", func(w http.ResponseWriter, r *http.Request) { frontend.ServeHTTP(w, r) })
+	router.Get("/login", func(w http.ResponseWriter, r *http.Request) { servePage(w, r, "login.html") })
+	router.Get("/register", func(w http.ResponseWriter, r *http.Request) { servePage(w, r, "register.html") })
+	router.Get("/app", func(w http.ResponseWriter, r *http.Request) { servePage(w, r, "app.html") })
+	router.Get("/chat/{roomID}", func(w http.ResponseWriter, r *http.Request) { servePage(w, r, "chat.html") })
+	router.Get("/ui/lesson", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, _ = w.Write([]byte(`<p><strong>HTMX</strong> pidió este fragmento al servidor y lo insertó sin recargar la página. El navegador conserva la pantalla y solo cambia esta pieza.</p>`))
 	})
 	router.Mount("/", community.Routes(store, authService.Require))
 	router.Handle("/ws/rooms/{roomID}", authService.Require(hub))
@@ -102,4 +114,8 @@ func write(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(response{Status: status, Data: data})
+}
+
+func servePage(w http.ResponseWriter, r *http.Request, name string) {
+	http.ServeFile(w, r, "web/"+name)
 }

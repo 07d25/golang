@@ -4,6 +4,9 @@ La meta es aprender Go siguiendo una aplicación real desde cero. Ejecuta cada l
 
 ## Ruta de aprendizaje
 
+El backend se aprende en la rama `02-gamer-chat-api`. El frontend se aprende en
+`03-gamer-chat-frontend`, partiendo de esta API ya terminada.
+
 0. [Antes de comenzar](00-ruta.md)
 1. [Mapa de conceptos](00-conceptos-completos.md)
 2. [Conceptos: API REST, HTTP y WebSocket](01-conceptos.md)
@@ -19,6 +22,7 @@ La meta es aprender Go siguiendo una aplicación real desde cero. Ejecuta cada l
 12. [Laboratorio completo](09-flujo-completo.md)
 13. [Migraciones](10-migraciones.md)
 14. [Seguridad y límites](11-seguridad-y-limites.md)
+15. [Frontend: HTMX, Alpine.js y Tailwind](13-frontend.md)
 
 ## Método
 

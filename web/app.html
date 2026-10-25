@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="es" x-data="communityApp()" x-init="init()">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Comunidad // Checkpoint</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script
+      defer
+      src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"
+    ></script>
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body class="grid-bg min-h-screen text-slate-100">
+    <div class="mx-auto max-w-7xl px-4 py-5 sm:px-8">
+      <header
+        class="flex items-center justify-between border-b border-white/10 pb-5"
+      >
+        <a href="/app" class="font-mono text-sm text-lime-300"
+          >CHECKPOINT<span class="text-white">//</span>COMMUNITY</a
+        ><button class="button-quiet text-sm" @click="logout()">Salir</button>
+      </header>
+      <div class="grid gap-8 py-8 lg:grid-cols-[220px_1fr_280px]">
+        <aside class="space-y-3">
+          <p class="eyebrow">Tu mapa</p>
+          <button
+            class="nav-item"
+            :class="{active: view==='feed'}"
+            @click="view='feed'"
+          >
+            ◈ Feed</button
+          ><button
+            class="nav-item"
+            :class="{active: view==='rooms'}"
+            @click="view='rooms'; loadRooms()"
+          >
+            ◌ Salas
+          </button>
+          <div
+            class="mt-8 rounded-xl border border-lime-300/20 bg-lime-300/5 p-4 text-sm text-slate-300"
+          >
+            <p class="font-semibold text-lime-200">Aprende mientras usas</p>
+            <p class="mt-2 leading-6">
+              Esta tarjeta es un fragmento HTML cargado con HTMX.
+            </p>
+            <button
+              class="mt-3 text-lime-300 underline"
+              hx-get="/ui/lesson"
+              hx-target="#lesson"
+              hx-swap="innerHTML"
+            >
+              Ver cómo funciona
+            </button>
+            <div id="lesson" class="mt-3 text-xs leading-5"></div>
+          </div>
+        </aside>
+        <main>
+          <template x-if="view==='feed'"
+            ><div>
+              <div class="mb-6">
+                <p class="eyebrow">Pulso de la comunidad</p>
+                <h1 class="text-4xl font-black">¿Qué estás jugando?</h1>
+              </div>
+              <form class="panel mb-6" @submit.prevent="createPost()">
+                <textarea
+                  class="textarea"
+                  x-model="newPost"
+                  maxlength="500"
+                  placeholder="Comparte una jugada, una duda o un descubrimiento…"
+                ></textarea>
+                <div class="mt-3 flex items-center justify-between">
+                  <span
+                    class="text-xs text-slate-500"
+                    x-text="`${newPost.length}/500`"
+                  ></span
+                  ><button class="button-primary" :disabled="!newPost.trim()">
+                    Publicar
+                  </button>
+                </div>
+              </form>
+              <p class="error" x-text="error" x-show="error"></p>
+              <div class="space-y-4">
+                <template x-for="post in posts" :key="post.id"
+                  ><article class="panel">
+                    <div class="flex items-center justify-between">
+                      <span class="font-mono text-xs text-lime-300"
+                        >PLAYER <span x-text="post.user_id"></span></span
+                      ><span class="text-xs text-slate-500"
+                        >#<span x-text="post.id"></span
+                      ></span>
+                    </div>
+                    <p
+                      class="mt-4 text-lg leading-8 text-slate-200"
+                      x-text="post.content"
+                    ></p>
+                    <div class="mt-5 flex gap-4 text-sm">
+                      <button class="text-lime-300" @click="like(post)">
+                        ♥ <span x-text="post.likes"></span></button
+                      ><button
+                        class="text-slate-400"
+                        @click="openComments(post)"
+                      >
+                        Comentarios
+                      </button>
+                    </div>
+                    <div
+                      class="mt-4 border-t border-white/10 pt-4"
+                      x-show="post.comments"
+                      x-cloak
+                    >
+                      <template
+                        x-for="comment in post.comments"
+                        :key="comment.id"
+                        ><p class="text-sm text-slate-400">
+                          <b
+                            class="text-slate-200"
+                            x-text="`#${comment.user_id}`"
+                          ></b>
+                          <span x-text="comment.content"></span></p
+                      ></template>
+                    </div></article
+                ></template>
+                <p class="panel text-slate-400" x-show="!posts.length">
+                  Todavía no hay publicaciones. Sé la primera persona en dejar
+                  una.
+                </p>
+              </div>
+            </div></template
+          ><template x-if="view==='rooms'"
+            ><div>
+              <div class="mb-6">
+                <p class="eyebrow">Conexiones en vivo</p>
+                <h1 class="text-4xl font-black">Elige una sala</h1>
+              </div>
+              <form
+                class="panel mb-6 flex gap-3"
+                @submit.prevent="createRoom()"
+              >
+                <input
+                  class="input"
+                  x-model="newRoom"
+                  placeholder="Nombre de la sala"
+                /><button class="button-primary">Crear</button>
+              </form>
+              <div class="grid gap-3 sm:grid-cols-2">
+                <template x-for="room in rooms" :key="room.id"
+                  ><button class="room-card text-left" @click="joinRoom(room)">
+                    <span class="font-mono text-xs text-lime-300"
+                      >ROOM <span x-text="room.id"></span></span
+                    ><b class="mt-2 block text-xl" x-text="room.name"></b
+                    ><span class="mt-4 block text-sm text-slate-400"
+                      >Entrar al chat →</span
+                    >
+                  </button></template
+                >
+              </div>
+            </div></template
+          >
+        </main>
+        <aside class="hidden lg:block">
+          <div class="panel sticky top-8">
+            <p class="eyebrow">Sesión activa</p>
+            <p
+              class="mt-3 text-xl font-bold"
+              x-text="user?.display_name || user?.username || 'Jugador' "
+            ></p>
+            <p class="mt-1 text-sm text-slate-400">
+              Tu token vive en el navegador para que puedas ver cómo se
+              autentican las peticiones.
+            </p>
+          </div>
+        </aside>
+      </div>
+    </div>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

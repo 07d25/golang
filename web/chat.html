@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="es" x-data="chatApp()" x-init="init()">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sala // Checkpoint</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script
+      defer
+      src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"
+    ></script>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body class="grid-bg min-h-screen text-slate-100">
+    <main class="mx-auto max-w-4xl px-4 py-6 sm:px-8">
+      <header
+        class="flex items-center justify-between border-b border-white/10 pb-5"
+      >
+        <a href="/app" class="font-mono text-sm text-lime-300"
+          >← VOLVER AL MAPA</a
+        ><span class="eyebrow"
+          >WebSocket / room <span x-text="roomID"></span
+        ></span>
+      </header>
+      <section class="panel mt-8">
+        <div
+          class="flex items-center justify-between border-b border-white/10 pb-5"
+        >
+          <div>
+            <p class="eyebrow">Conexión en vivo</p>
+            <h1 class="mt-2 text-3xl font-black" x-text="roomName"></h1>
+          </div>
+          <span
+            class="rounded-full bg-lime-300/10 px-3 py-1 text-xs text-lime-200"
+            x-text="connected ? 'conectado' : 'conectando…'"
+          ></span>
+        </div>
+        <div class="my-6 min-h-[390px] space-y-4">
+          <template
+            x-for="message in messages"
+            :key="message.id || message.localID"
+            ><div>
+              <span class="font-mono text-xs text-lime-300"
+                >PLAYER <span x-text="message.user_id"></span
+              ></span>
+              <p
+                class="mt-1 text-lg text-slate-200"
+                x-text="message.content"
+              ></p></div
+          ></template>
+          <p x-show="!messages.length" class="pt-24 text-center text-slate-500">
+            La sala está en silencio. Rompe el hielo.
+          </p>
+        </div>
+        <form
+          class="flex gap-3 border-t border-white/10 pt-5"
+          @submit.prevent="send()"
+        >
+          <input
+            class="input mt-0"
+            x-model="draft"
+            placeholder="Escribe un mensaje…"
+            maxlength="500"
+          /><button class="button-primary">Enviar</button>
+        </form>
+        <p class="error" x-text="error" x-show="error"></p>
+      </section>
+    </main>
+    <script src="/static/app.js"></script>
+    <script>
+      function chatApp() {
+        return {
+          roomID: location.pathname.split("/").pop(),
+          roomName: "Sala en vivo",
+          messages: [],
+          draft: "",
+          connected: false,
+          error: "",
+          socket: null,
+          async init() {
+            if (!localStorage.getItem("checkpoint_token")) {
+              location.href = "/login";
+              return;
+            }
+            try {
+              this.messages =
+                (await api.request(`/rooms/${this.roomID}/messages`)) || [];
+              const rooms = await api.request("/rooms");
+              const room = rooms.find(
+                (item) => String(item.id) === String(this.roomID),
+              );
+              if (room) this.roomName = room.name;
+              this.socket = new WebSocket(
+                `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/rooms/${this.roomID}`,
+                [],
+              );
+              this.socket.onopen = () => {
+                this.connected = true;
+              };
+              this.socket.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                if (message.type === "message")
+                  this.messages.push({
+                    ...message,
+                    localID: crypto.randomUUID(),
+                  });
+              };
+              this.socket.onclose = () => {
+                this.connected = false;
+              };
+            } catch (error) {
+              this.error = error.message;
+            }
+          },
+          send() {
+            if (
+              !this.draft.trim() ||
+              !this.socket ||
+              this.socket.readyState !== 1
+            )
+              return;
+            this.socket.send(
+              JSON.stringify({ type: "message", content: this.draft }),
+            );
+            this.draft = "";
+          },
+        };
+      }
+    </script>
+  </body>
+</html>

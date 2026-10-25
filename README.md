@@ -2,6 +2,10 @@
 
 Proyecto educativo para aprender Go construyendo una red social mínima con chat en tiempo real.
 
+La rama `02-gamer-chat-api` contiene el backend. La rama
+`03-gamer-chat-frontend` añade el frontend educativo con HTMX, Alpine.js y
+Tailwind CSS.
+
 Incluye usuarios, publicaciones, follows, likes, comentarios, salas, mensajes, PostgreSQL y WebSocket con `github.com/coder/websocket`.
 
 Las rutas que modifican contenido requieren `Authorization: Bearer <token>`. El flujo de aprendizaje empieza creando una cuenta, haciendo login y usando el JWT.
