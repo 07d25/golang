@@ -18,6 +18,15 @@ cp .env.example .env
 go run ./cmd/api
 ```
 
+Para cargar tres usuarios de prueba, ejecuta en otra terminal:
+
+```bash
+go run ./cmd/seed
+```
+
+El seed es idempotente: puedes ejecutarlo varias veces y solo mantiene
+actualizados esos tres usuarios, sin crear publicaciones, salas ni mensajes.
+
 En otra terminal:
 
 ```bash

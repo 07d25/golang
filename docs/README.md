@@ -23,6 +23,7 @@ El backend se aprende en la rama `02-gamer-chat-api`. El frontend se aprende en
 13. [Migraciones](10-migraciones.md)
 14. [Seguridad y límites](11-seguridad-y-limites.md)
 15. [Frontend: HTMX, Alpine.js y Tailwind](13-frontend.md)
+16. [Seed de usuarios de prueba](14-seed.md)
 
 ## Método
 
